@@ -1,4 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import {AfterViewInit, Component, OnInit} from '@angular/core';
+import {DateService} from "../shared/date.service";
+import {Task} from "../shared/date.model";
+import {FormControl, FormGroup, Validators} from "@angular/forms";
+import {TaskService} from "../shared/task.service";
+import {switchMap} from "rxjs/operators";
 
 @Component({
   selector: 'app-organizer',
@@ -6,10 +11,45 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./organizer.component.scss']
 })
 export class OrganizerComponent implements OnInit {
+  form: FormGroup;
+  tasks: Task[];
 
-  constructor() { }
+  constructor(public dateService: DateService, private taskService: TaskService) { }
 
   ngOnInit(): void {
+    this.dateService.date
+      .pipe(switchMap(value => this.taskService.load(value)))
+      .subscribe(tasks => {
+        if(!tasks) return;
+
+        this.tasks = tasks;
+    });
+
+    this.form = new FormGroup({
+      title: new FormControl('', Validators.required)
+    })
+  }
+
+  submit() {
+    const {title} = this.form.value;
+    const task: Task = {
+      title,
+      date: this.dateService.date.value.format('DD-MM-YYYY')
+    };
+
+    this.taskService.create(task).subscribe(
+      (task) => {
+        this.tasks.push(task);
+        this.form.reset();
+      },
+      (error => console.log(error))
+    );
+  }
+
+  remove(task: Task) {
+    this.taskService.remove(task).subscribe(() => {
+      this.tasks = this.tasks.filter(t => t.id !== task.id);
+    }, error => console.log(error))
   }
 
 }

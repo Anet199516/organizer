@@ -10,3 +10,13 @@ export interface Day {
   active: boolean;
   selected: boolean;
 }
+
+export interface Task {
+  id?: string,
+  title: string,
+  date?: string
+}
+
+export interface Response {
+  name: string
+}
